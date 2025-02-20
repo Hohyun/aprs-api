@@ -9,7 +9,7 @@ use reqwest::header;
 pub struct NaverPayResponse {
     pub code: String,
     pub message: String,
-    pub body: NaverPaySettleData,
+    pub body: Option<NaverPaySettleData>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -75,16 +75,13 @@ async fn get_naverpay_settle_data(sales_date: &str) -> anyhow::Result<Vec<Paymen
                 .json::<NaverPayResponse>()
                 .await?;
         
-            let resp_body = &resp.body;
-            // println!("Naverpay -- APIKEY{}, date: {},  page_no: {}, count: {}", n, sales_date, page_no, &resp_body.list.len());
-
-            for trx in &resp_body.list {
-                trx_list.push(trx.clone());
+            if let Some(body) = &resp.body {
+                for trx in &body.list {
+                    trx_list.push(trx.clone());
+                }     
+                total_page = body.total_page_count.unwrap_or(total_page);
             }
-            
-            total_page = resp_body.total_page_count.unwrap_or(total_page);
             page_no += 1;
-
         }
 
         for trx in trx_list {
@@ -92,7 +89,7 @@ async fn get_naverpay_settle_data(sales_date: &str) -> anyhow::Result<Vec<Paymen
             payment_list.push(payment);
         }
     }
-    println!("Naverpay --  date: {},  total count: {}", sales_date, payment_list.len());
+    println!("Naverpay -- date: {}, count: {}", sales_date, payment_list.len());
     
     Ok(payment_list)
 }

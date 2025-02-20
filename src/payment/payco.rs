@@ -23,8 +23,6 @@ async fn get_payco_settle_data(sales_date: &str) -> anyhow::Result<Vec<Payment>>
         .text()
         .await?;
 
-    // println!("Payco --  date: {},  {:?}", sales_date, &resp);
-
     let mut reader = ReaderBuilder::new()
         .delimiter(b'\t')
         .has_headers(true)
@@ -34,6 +32,8 @@ async fn get_payco_settle_data(sales_date: &str) -> anyhow::Result<Vec<Payment>>
         let record = result?;
         payment_list.push(convert_to_payment_payco(record));
     }
+
+     println!("Payco -- date: {}, count: {:?}", sales_date, payment_list.len());
 
     Ok(payment_list)
 }

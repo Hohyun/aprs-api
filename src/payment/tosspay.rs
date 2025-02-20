@@ -59,7 +59,6 @@ async fn get_tosspay_settle_data(sales_date: &str) -> anyhow::Result<Vec<Payment
         .json::<TossPaySettleData>()
         .await?;
 
-        println!("TOSSJinair: {}, count: {}, amount: {}", n, data.transaction_list.len(), data.total_amount);
         for trx in data.transaction_list {
             trx_list.push(trx);
         }
@@ -70,6 +69,8 @@ async fn get_tosspay_settle_data(sales_date: &str) -> anyhow::Result<Vec<Payment
         let payment = convert_to_payment_tosspay(trx);
         payment_list.push(payment);
     }
+    println!("Tosspay -- date: {}, count: {}", &sales_date, payment_list.len());
+
     Ok(payment_list)
 }
 

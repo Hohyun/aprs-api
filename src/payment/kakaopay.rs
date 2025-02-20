@@ -33,8 +33,8 @@ struct KakaoStatistics {
 #[derive(Deserialize, Debug)]
 #[allow(dead_code)]
 struct Stat {
-    count: i32,
-    amount: i32,
+    count: i64,
+    amount: i64,
 }
 
 #[derive(Deserialize, Debug)]
@@ -62,20 +62,27 @@ struct KakaoTransactionItem {
 }
 
 pub async fn get_and_save_kakaopay_settle_data(sales_date: &str) -> anyhow::Result<()> {
-    let trx_list = get_kakaopay_settle_data(sales_date).await?;
-    let _ = save_csv_file("NK", sales_date, trx_list)?;
+
+    let r = get_kakaopay_settle_data(sales_date).await;
+    match r {
+        Ok(trx_list) => {
+            let _ = save_csv_file("NK", sales_date, trx_list)?;
+        },
+        Err(_) => {
+            println!("Kakaopay -- 올바르지 않은 요청(no uploaded file!), 5일전 Data까지만 조회 가능합니다.");
+        }
+    }
+
     Ok(())
 }
 
 async fn get_kakaopay_settle_data(sales_date: &str) -> anyhow::Result<Vec<Payment>> {
     let url = get_kakaopay_settle_file_url(sales_date).await?;
-    // download file from url
+
     let resp = reqwest::get(url)
         .await?
         .json::<KakaoPaySettleData>()
         .await?; 
-
-    println!("Kakaopay --  date: {},  {:?}", resp.target_date, resp.statistics);
 
     let mut payment_list: Vec<Payment> = Vec::new();
     for trx in resp.data {
@@ -83,6 +90,7 @@ async fn get_kakaopay_settle_data(sales_date: &str) -> anyhow::Result<Vec<Paymen
         payment_list.push(payment);
     }
 
+    println!("Kakaopay -- date: {},  count: {}", &sales_date, payment_list.len());
     Ok(payment_list)
 }
 
@@ -98,10 +106,7 @@ async fn get_kakaopay_settle_file_url(sales_date: &str) -> anyhow::Result<String
         .send()
         .await?
         .json::<KakaoSettleFileInfo>()
-        .await
-        .unwrap_or(KakaoSettleFileInfo { url: "".to_string(), expires_at: "".to_string() });
-
-    println!("{:?}", resp);
+        .await?;
 
     Ok(resp.url)
 }

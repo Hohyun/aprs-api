@@ -1,12 +1,15 @@
 use clap::Parser;
+use chrono::prelude::*;
 
 pub mod payment;
 
-#[derive(Parser, Debug)]
+
+
+#[derive(Parser, Clone, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
     /// Settle date (YYYYMMDD)
-    #[clap(short, long)]
+    #[clap(short, long, default_value_t = day_before_today(3))]
     date: String,
 
     /// Settle Company Code: JP, NK, NP, PC, TP, SP, ALL
@@ -34,10 +37,25 @@ async fn main() -> anyhow::Result<()> {
         "PC" => {
             let _ = crate::payment::payco::get_and_save_payco_settle_data(&args.date).await?;
         },
+        "ALL" => {
+            // I would like to run all payment settlement data in parallel
+            let tp = crate::payment::tosspay::get_and_save_tosspay_settle_data(&args.date);
+            let nk = crate::payment::kakaopay::get_and_save_kakaopay_settle_data(&args.date);
+            let np = crate::payment::naverpay::get_and_save_naverpay_settle_data(&args.date);
+            let pc = crate::payment::payco::get_and_save_payco_settle_data(&args.date);
+            // wait for all futures to complete
+            let _ = tokio::try_join!(tp, nk, np, pc)?;
+        },
         _ => {
             println!("Not supported yet: {}", args.paycode);
         }
     }
 
     Ok(())
+}
+
+fn day_before_today(delta: i64) -> String {
+    let today = Local::now();
+    let four_days_ago = today - chrono::Duration::days(delta);
+    four_days_ago.format("%Y%m%d").to_string()
 }
