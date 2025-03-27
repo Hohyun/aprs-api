@@ -10,7 +10,6 @@ pub struct JinairPaySettleData {
 }
 
 #[derive(Deserialize, Debug)]
-#[serde(rename(serialize = "camelCase"))]
 pub struct JinairPayTransactionItem {
     pub approve_date: String,
     pub cancel_date: String,
