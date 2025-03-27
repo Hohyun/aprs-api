@@ -37,14 +37,18 @@ async fn main() -> anyhow::Result<()> {
         "PC" => {
             let _ = crate::payment::payco::get_and_save_payco_settle_data(&args.date).await?;
         },
+        "JP" => {
+            let _ = crate::payment::jinairpay::get_and_save_jinairpay_settle_data(&args.date).await?;
+        },
         "ALL" => {
             // I would like to run all payment settlement data in parallel
             let tp = crate::payment::tosspay::get_and_save_tosspay_settle_data(&args.date);
             let nk = crate::payment::kakaopay::get_and_save_kakaopay_settle_data(&args.date);
             let np = crate::payment::naverpay::get_and_save_naverpay_settle_data(&args.date);
             let pc = crate::payment::payco::get_and_save_payco_settle_data(&args.date);
+            let jp = crate::payment::jinairpay::get_and_save_jinairpay_settle_data(&args.date);
             // wait for all futures to complete
-            let _ = tokio::try_join!(tp, nk, np, pc)?;
+            let _ = tokio::try_join!(tp, nk, np, pc, jp)?;
         },
         _ => {
             println!("Not supported yet: {}", args.paycode);
