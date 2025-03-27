@@ -46,7 +46,7 @@ fn convert_to_payment_payco (record: csv::StringRecord) -> Payment {
     };
     
     Payment {
-        payment_id: format!("PC_SP_{}", record.get(0).unwrap()),
+        payment_id: format!("PC_SP_{}", record.get(3).unwrap()),
         gateway: "SP".to_string(),
         settle_co: "PC".to_string(),
         merchant_id: "IBSPCKRW".to_string(),
