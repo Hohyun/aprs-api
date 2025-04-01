@@ -99,12 +99,6 @@ fn convert_to_payment_jinairpay(trx: JinairPayTransactionItem) -> Payment {
         paid_amt: trx.settle_amount,
         cc_gubun: trx.pgcode,
         sales_gubun: sale_or_refund(trx.amount),
-        maeib_gubun: match trx.usestate {
-            0 => "정상".to_string(),
-            1 => "취소".to_string(),
-            2 => "부분취소".to_string(),
-            3 => "환불".to_string(),
-            _ => "".to_string(),
-        },
+        maeib_gubun: "OK".to_string(),
     }
 }
