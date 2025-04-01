@@ -41,12 +41,13 @@ async fn get_jinairpay_settle_data(sales_date: &str) -> anyhow::Result<Vec<Payme
     dotenvy::dotenv()?;
     let today = chrono::Local::now();
     let today = today.format("%Y%m%d").to_string();
-    let url = format!("https://pgapi.payletter.com/v1.0/payments/settle?client_id=jinair&date={}&date_settle={}", sales_date, today);
-
+    
     let mut trx_list: Vec<JinairPayTransactionItem> = Vec::new();
     
     for n in 1..=2 {
+        let client_id = env::var("JP_CLIENTID_".to_string() + n.to_string().as_str())?;
         let api_key = env::var("JP_APIKEY_".to_string() + n.to_string().as_str())?;
+        let url = format!("https://pgapi.payletter.com/v1.0/payments/settle?client_id={}&date={}&date_settle={}", client_id, sales_date, today);
         
         let client = reqwest::Client::new();
         let resp = client.get(&url)
@@ -75,6 +76,12 @@ fn convert_to_payment_jinairpay(trx: JinairPayTransactionItem) -> Payment {
     let format_date = |s: &str| -> String {
         format!("{}-{}-{}", &s[0..4], &s[4..6], &s[6..8])
     };
+    let sale_or_refund = |amount: i32| -> String {
+        if amount > 0 {
+            return "Sale".to_string();
+        }
+        "Refund".to_string()
+    };
     Payment {
         payment_id: format!("JP_SP_{}", &trx.approve_date),
         gateway: "SP".to_string(),
@@ -91,7 +98,13 @@ fn convert_to_payment_jinairpay(trx: JinairPayTransactionItem) -> Payment {
         vat: 0,
         paid_amt: trx.settle_amount,
         cc_gubun: trx.pgcode,
-        sales_gubun: trx.usestate.to_string(),
-        maeib_gubun: "".to_string(),
+        sales_gubun: sale_or_refund(trx.amount),
+        maeib_gubun: match trx.usestate {
+            0 => "정상".to_string(),
+            1 => "취소".to_string(),
+            2 => "부분취소".to_string(),
+            3 => "환불".to_string(),
+            _ => "".to_string(),
+        },
     }
 }
